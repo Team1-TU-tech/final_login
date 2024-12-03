@@ -62,7 +62,7 @@ async def logout(request: Request):
         # 카카오 로그아웃 처리
         client_id = kakao_api.client_id
         logout_redirect_uri = kakao_api.logout_redirect_uri
-        await kakao_api.logout(client_id, logout_redirect_uri)
+        logout_url = await kakao_api.logout(client_id, logout_redirect_uri)
 
         # 애플리케이션 내 세션에서 토큰 삭제
         request.session.pop('access_token', None)
@@ -72,8 +72,7 @@ async def logout(request: Request):
         response = RedirectResponse(url="/")
         response.delete_cookie("access_token")  # 쿠키에서 access_token 삭제
         logger.debug("Access token removed from cookies")
-
-        return response
+        return RedirectResponse(url=logout_url)  # 카카오 로그아웃 페이지로 리디렉션
     
     logger.debug("No access_token in session")
     return RedirectResponse(url="/?error=Not logged in", status_code=302)
