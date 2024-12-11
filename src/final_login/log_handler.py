@@ -1,7 +1,7 @@
 import logging
-import os
 import json
 from datetime import datetime
+from fastapi import Request
 
 # 로거 설정
 logger = logging.getLogger()
@@ -27,9 +27,10 @@ def log_event(user_id: str, device: str, action: str, **kwargs):
     :param user_id: 사용자 ID
     :param device: 디바이스 정보
     :param action: 액션 정보 (예: 검색, 상세 조회 등)
+    :param ip_address: 사용자 IP 정보
     :param kwargs: 추가적인 정보들 (예: 날짜, 키워드, 에러 등)
     """
-    
+
     # 로그 메시지 생성
     log_message = {
         "timestamp": datetime.now().isoformat(),

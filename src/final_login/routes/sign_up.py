@@ -27,7 +27,7 @@ async def check_username(request: Request, username_check: UsernameCheck):
             status="failed",
             error="ID already exists", # ID가 중복될 때 error 추가
             requested_id=username_check.id,
-            ip_address= ip_address ### IP 있길래.. 필요없을까? 위치로 지역 같은거 추출가능하니까..? ###
+            ip_address= ip_address 
         )
         raise HTTPException(status_code=400, detail="아이디가 이미 존재합니다.")
     log_event(

@@ -20,9 +20,11 @@ async def login(request: Request, user: User = Depends(validate_user)):
     
     # 로그를 위한 device, user_id, birthday, gender 추출
     device = request.headers.get("User-Agent", "Unknown")
+    ip_address = request.client.host  # 클라이언트의 IP 주소
     user_id = str(user["id"])
     birthday = user.get("birthday")
     gender = user.get("gender")
+    create_at = user.get("create_at")
 
     try:
         # 로그 이벤트 기록
@@ -31,7 +33,9 @@ async def login(request: Request, user: User = Depends(validate_user)):
             birthday=birthday,
             gender=gender,
             device=device,     
-            action="Login"
+            action="Login",
+            ip_address= ip_address,
+            create_at=create_at
         )
     except Exception as e:
         print(f"Error logging event: {e}")
@@ -56,6 +60,7 @@ async def logout(request: Request, user: User = Depends(validate_user)):
 
     device = request.headers.get("User-Agent", "Unknown")
     user_id = str(user["id"])
+    ip_address = request.client.host  # 클라이언트의 IP 주소
 
     try:
         # 로그 이벤트 기록
@@ -63,6 +68,7 @@ async def logout(request: Request, user: User = Depends(validate_user)):
             user_id=user_id,  
             device=device,     
             action="Logout",   
+            ip_address= ip_address
         )
     except Exception as e:
         print(f"Error logging event: {e}")
