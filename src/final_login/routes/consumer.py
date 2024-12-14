@@ -7,6 +7,11 @@ import boto3
 import os, time
 from io import BytesIO
 from dotenv import load_dotenv
+import logging
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 # .env 파일을 로드하여 환경 변수 읽기
 load_dotenv()
@@ -23,7 +28,7 @@ consumer = KafkaConsumer(
     value_deserializer=lambda m: json.loads(m.decode('utf-8'))
 )
 # 여러 토픽을 구독
-consumer.subscribe(['Auth_log', 'Kakao', 'Signup_log'])
+consumer.subscribe(['Auth_log', 'Kakao_log', 'Signup_log'])
 
 # S3 클라이언트 설정
 s3 = boto3.client('s3',
@@ -67,7 +72,11 @@ def consume_and_save_to_s3(batch_size=100, timeout=10):
                 Body=buffer
             )
 
-            print(f'로그가 S3에 업로드되었습니다: {message.topic}/{timestamp}.parquet')
+            #print(f'로그가 S3에 업로드되었습니다: {message.topic}/{timestamp}.parquet') 
+            
+            # 백그라운드 실행에서는 print문 출력 안돼서 log로 출력
+            logger.info(f"토픽: {message.topic}, 메시지: {message.value}")
+            logger.info(f"로그가 S3에 업로드되었습니다: {message.topic}/{timestamp}.parquet")
 
             # 배치 후 초기화
             log_messages = []
