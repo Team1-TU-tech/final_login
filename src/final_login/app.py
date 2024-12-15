@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
-from src.final_login.routes.auth import auth_router
-from src.final_login.routes.sign_up import signup_router
-from src.final_login.routes.kakao import kakao_router
+from src.final_login.routers.auth import auth_router
+from src.final_login.routers.sign_up import signup_router
+from src.final_login.routers.kakao import kakao_router
 import os
 from dotenv import load_dotenv
 

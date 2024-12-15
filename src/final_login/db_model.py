@@ -43,6 +43,3 @@ class UserSignUp(BaseModel):
 class IDCheck(BaseModel):
     id: str
 
-# JWT 토큰 
-class TokenBody(BaseModel):
-    token: str
