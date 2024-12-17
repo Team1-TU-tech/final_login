@@ -1,6 +1,5 @@
 import pytz
 from fastapi import APIRouter, Query, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer
 from typing import List, Optional
 from bson import ObjectId
 from pydantic import BaseModel
@@ -8,8 +7,12 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 from src.final_login.log_handler import log_event
 import os
-import certifi
 from dotenv import load_dotenv
+from src.final_login.validate import verify_token
+from src.final_login.token import SECRET_KEY, ALGORITHM
+from jose import JWTError
+from src.final_login.db_model import user_collection
+
 
 load_dotenv()  # .env 파일에서 변수 로드
 
@@ -55,13 +58,39 @@ async def search_tickets(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
+    ############# 로그 데이터 및 JWT 디코딩 추가 ##############
+    token = request.headers.get("Authorization")
+    if not token:
+        print("Token is missing in the Authorization header.")
+        raise HTTPException(status_code=400, detail="Token is missing in the Authorization header.")
+
+    # JWT 토큰 디코드
+    try:
+        decoded_token = verify_token(
+            token=token,
+            SECRET_KEY=SECRET_KEY,
+            ALGORITHM=ALGORITHM,
+            refresh_token=None,
+            expires_delta=None
+        )
+        user_id = decoded_token.get("id", "anonymous")
+    except JWTError as e:
+        print(f"Token verification failed: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid token.")
+    ######################################################
     
-    #############로그데이터를 위한 로직 추가##############
-    #body = await request.json()
+
+    ################### 추가 정보 받아오기 (언니가 원하는대로 수정) ########################
+        # 사용자 정보 조회
+    user_info = await user_collection.find_one({"id": user_id})
+    if not user_info:
+        raise HTTPException(status_code=404, detail="User not found")
+    gender = user_info.get("gender")
+    birthday = user_info.get("birthday")
+
+    #####################################################################################
+
     device = request.headers.get("User-Agent", "Unknown")
-    user_id = request.headers.get("id", "anonymous")
-    #user_id = body.get("id", "anonymous")
-    ###############################################
     query = {}
    
     # 카테고리 매핑 적용
@@ -129,13 +158,15 @@ async def search_tickets(
     
     try:
         log_event(
-            user_id=user_id,  # 헤더에서 받은 user_id 사용
+            user_id=user_id,  # JWT 토큰에서 추출한 user_id 사용
             device=device,     # 디바이스 정보 (User-Agent 또는 쿼리 파라미터)
             action="search",   # 액션 종류: 'Search'
             topic="search_log", #카프카 토픽 구별을 위한 컬럼
             category=category if category is not None else "None", # 카테고리
             region=region if region is not None else "None",
-            keyword=keyword if keyword is not None else "None"
+            keyword=keyword if keyword is not None else "None", 
+            gender=gender, 
+            birthday=birthday
             
     )
         print("Log event should have been recorded.")
@@ -148,12 +179,39 @@ async def search_tickets(
 @router.get("/detail/{id}")
 async def get_detail_by_id(request: Request, id: str):
 
-    #############로그데이터를 위한 로직 추가##############
-    #body = await request.json()
+    ############# 로그 데이터 및 JWT 디코딩 추가 ##############
+    token = request.headers.get("Authorization")
+    if not token:
+        print("Token is missing in the Authorization header.")
+        raise HTTPException(status_code=400, detail="Token is missing in the Authorization header.")
+
+    # JWT 토큰 디코드
+    try:
+        decoded_token = verify_token(
+            token=token,
+            SECRET_KEY=SECRET_KEY,
+            ALGORITHM=ALGORITHM,
+            refresh_token=None,
+            expires_delta=None
+        )
+        user_id = decoded_token.get("id", "anonymous")
+    except JWTError as e:
+        print(f"Token verification failed: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid token.")
+    ######################################################
+    
+    
+    ################### 추가 정보 받아오기 (언니가 원하는대로 수정) ########################
+        # 사용자 정보 조회
+    user_info = await user_collection.find_one({"id": user_id})
+    if not user_info:
+        raise HTTPException(status_code=404, detail="User not found")
+    gender = user_info.get("gender")
+    birthday = user_info.get("birthday")
+
+    #####################################################################################
+
     device = request.headers.get("User-Agent", "Unknown")
-    #user_id = body.get("id", "anonymous")
-    user_id = request.headers.get("id", "anonymous")
-    ###############################################
 
     try:
         object_id = ObjectId(id)
@@ -171,6 +229,8 @@ async def get_detail_by_id(request: Request, id: str):
                 title= result['title'],
                 category=result['category'] if result['category'] is not None else "None", # 카테고리
                 region=result['region'] if result['region'] is not None else "None",     # 지역
+                gender=gender,
+                birthday=birthday
                 )
             
             return {"data": result}

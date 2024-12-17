@@ -14,12 +14,14 @@ SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 
+# CORS 설정
+origins = ["http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000/"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=[""],
-    allow_headers=[""],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 라우터를 메인 앱에 연결
